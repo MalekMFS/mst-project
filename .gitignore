@@ -1,0 +1,10 @@
+# Usually we ignore these in a Scala project
+.idea
+.vscode
+target
+.metals
+.bloop
+/logs
+.dotty-ide-*
+*.pid
+/src/main/resources/
