@@ -1,13 +1,15 @@
 package mstproject
 
+import Model._
+
 object Boruvka {
-  def apply(E: Array[((Int, Int), Int)]) : Array[((Int, Int), Int)] ={
+  def apply(E : List[weightedEdge]): List[weightedEdge] = {
     val s = new DisjoIntSet[Int]
-    val tree = new Array[((Int, Int), Int)](0)
+    val tree = List[weightedEdge]()
     // making new sets: O(E)
     for (e <- E){
-        val u = e._1._1
-        val v = e._1._2
+        val u = e.edge.u
+        val v = e.edge.v
 
         if(s.find(u) == -1)
             s.add(u)
