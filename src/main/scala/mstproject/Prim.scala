@@ -1,6 +1,6 @@
 package mstproject
 
-import Model._
+import mstproject.Model._
 
 import scala.collection.mutable.ListBuffer
 

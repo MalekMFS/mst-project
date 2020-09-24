@@ -2,7 +2,6 @@
 package mstproject
 
 import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
 
 class DisjoIntSet[Element] {
   

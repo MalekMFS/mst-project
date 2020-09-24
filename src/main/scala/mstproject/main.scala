@@ -1,8 +1,8 @@
 // https://www.jetbrains.com/help/idea/creating-a-remote-server-configuration.html#mapping
 package mstproject
 
-import Model._
 import better.files._
+import mstproject.Model._
 
 object main extends App {
     val sampleEdges = List(((1,4),14), ((3,5),5), ((4,6),6), ((1,2),7), ((2,5),3), ((2,3),8), ((5,6),10), ((2,4),11), ((5,7),12), ((6,7),13), ((4,5),15))

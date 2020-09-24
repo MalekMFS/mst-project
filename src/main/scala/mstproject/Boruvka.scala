@@ -1,5 +1,6 @@
 package mstproject
-object Brovka {
+
+object Boruvka {
   def apply(E: Array[((Int, Int), Int)]) : Array[((Int, Int), Int)] ={
     val s = new DisjoIntSet[Int]
     val tree = new Array[((Int, Int), Int)](0)

@@ -1,7 +1,8 @@
 package mstproject
 // by swaroop et al
 // refactored by MFS
-import Model._
+import mstproject.Model._
+
 import scala.collection.mutable.ListBuffer
 
 object Kruskal {
