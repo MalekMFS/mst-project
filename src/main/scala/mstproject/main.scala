@@ -21,5 +21,8 @@ object main extends App {
     println("---")
     val prim = Prim(edges)
     println(prim.length)//; prim.foreach(println)
+    println("---")
+    val boruvka = Boruvka(edges)
+    println(boruvka.length)//; boruvka.foreach(println)
 
 }

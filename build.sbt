@@ -2,6 +2,10 @@ name := "mst-project"
 
 version := "0.1"
 
-scalaVersion := "2.13.3"
+scalaVersion := "2.12.12"
 
-libraryDependencies += "com.github.pathikrit" %% "better-files" % "3.9.1"
+libraryDependencies ++= Seq(
+  "com.github.pathikrit" %% "better-files" % "3.9.1",
+  "org.apache.spark" %% "spark-core" % "3.0.1",
+  "org.apache.spark" %% "spark-sql" % "3.0.1"
+)

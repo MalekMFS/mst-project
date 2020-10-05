@@ -6,6 +6,7 @@ import scala.collection.mutable.ListBuffer
 
 object Prim {
     //TODO refactor to FP. you could use Map-Filter instead of Loop-if. Reduce mutation.
+    //TODO Check Parallel algorithm in wikipedia
     def apply(E: List[weightedEdge]): List[weightedEdge] ={
 
         object MinOrder extends Ordering[weightedEdge] {
