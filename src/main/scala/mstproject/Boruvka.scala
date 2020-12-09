@@ -2,29 +2,88 @@ package mstproject
 
 import Model._
 
-object Boruvka {
-  def apply(E : List[weightedEdge]): List[weightedEdge] = {
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 
-    val s = new DisjoIntSet[Int]
-//    val tree = List[weightedEdge]()
-    // Initialize the set. making new sets: O(E)
+object Boruvka {
+//  def demo[T: Monoid](ls: List[T]) =
+//    ls.foldLeft(Monoid[T].empty) (_ |+| _)
+
+  def apply(E : List[weightedEdge]): List[weightedEdge] = {
+    //TODO use bloomFilter
+    //FIXME tikiDisjointSet's find method seems non-optimal. fix or replace it.
+
+    //TODO Move MinOrder definition to Model
+    object MinOrder extends Ordering[weightedEdge] {
+      override def compare(x: weightedEdge, y: weightedEdge): Int = y.weight.compareTo(x.weight)
+    }
+
+    /** Vertex -> List of Edges map, and list of vertices */
+    val t1 = E.map(e => (e.edge.u, e))
+    val t2 = E.map(e => (e.edge.v, e))
+    val vToE = (t1 ++ t2).groupBy(_._1).mapValues(list => list.map(_._2)) // a map from Vertex to Edges connected to vertex
+    val vertices = ListBuffer[Int]()
+
+    /** Initialize the DisjointSet. add a set for each vertex */
     for (e <- E){
       val u = e.edge.u
       val v = e.edge.v
 
-      if(s.find(u) == -1)
-          s.add(u)
-      if(s.find(v) == -1)
-          s.add(v)
+      if(!vertices.contains(u))
+        vertices += u
+      if(!vertices.contains(v))
+        vertices += v
     }
-    /** While 's' has more than one component */
-    while(s.size > 1){
-        
-    }
-    // start vertex
-    val start = 1
-    // val m = new Map[Int, List[((Int, Int), Int)]](s.size)
+    val s = tikiDisjointSet[Int](vertices.toSet)
 
-    return tree
+    /** While 'set' has more than one component */
+    @tailrec
+    def BoruvkaLoop (vSet: tikiDisjointSet[Int], edgesMap: Map[Int, List[weightedEdge]], forest: List[weightedEdge]): List[weightedEdge] = {
+      //TODO check if edgesMap is nonempty for disconnected graph
+      //FIXME prune inner-edges (edges inside a set)
+//      val minHeap = scala.collection.mutable.PriorityQueue.empty(MinOrder)
+      if (vSet.components > 1) {
+        val sets = vSet.parents.groupBy(_._2).mapValues(_.keys) // a Map from Sets to corresponding vertices
+        /** foreach connected component select their minimum edge */
+        val selectedEdges = sets.map { set =>
+          val vertices = set._2
+          // 1. Find cheapest outgoing edge (for each set)
+          // 2. select the cheapest among them
+          vertices.map( v =>
+            edgesMap(v).minBy(_.weight)
+          ).minBy(_.weight) // Reducing by minBy
+        }.toSet // removed duplicate edges by toSet conversion
+
+        /** Remove selected edges from the edgesMap for the next iterations */
+        //TODO check if it's better to use `fold` instead of `foldLeft`
+        val newEdgesMap = selectedEdges.foldLeft(edgesMap) { (m, e) =>
+          //TODO any special case that temp.length == 0 ?
+          val temp = m.-(e.edge.u, e.edge.v)
+          val eu = m(e.edge.u)  diff List(e)
+          val ev = m(e.edge.v)  diff List(e)
+          if (eu.nonEmpty && ev.nonEmpty)
+            temp + (e.edge.u -> eu, e.edge.v -> ev)
+          else if (eu.nonEmpty)
+            temp + (e.edge.u -> eu)
+          else if (ev.nonEmpty)
+            temp + (e.edge.v -> ev)
+          else
+            temp
+        }
+
+        /** union sets in this iteration */
+        val newvSet: tikiDisjointSet[Int] =
+          selectedEdges.foldLeft(vSet)((s, e) => s.union(e.edge.u, e.edge.v)
+          match {
+            case Some(set) => set
+            case None => tikiDisjointSet.empty
+          })
+
+        BoruvkaLoop(newvSet, newEdgesMap, forest ++ selectedEdges.toList)
+      }
+      else forest
+    }
+
+    BoruvkaLoop(s, vToE, List[weightedEdge]())
     }
 }
