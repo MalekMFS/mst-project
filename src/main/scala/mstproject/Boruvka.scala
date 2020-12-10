@@ -13,11 +13,6 @@ object Boruvka {
     //TODO use bloomFilter
     //FIXME tikiDisjointSet's find method seems non-optimal. fix or replace it.
 
-    //TODO Move MinOrder definition to Model
-    object MinOrder extends Ordering[weightedEdge] {
-      override def compare(x: weightedEdge, y: weightedEdge): Int = y.weight.compareTo(x.weight)
-    }
-
     /** Vertex -> List of Edges map, and list of vertices */
     val t1 = E.map(e => (e.edge.u, e))
     val t2 = E.map(e => (e.edge.v, e))
@@ -40,8 +35,6 @@ object Boruvka {
     @tailrec
     def BoruvkaLoop (vSet: tikiDisjointSet[Int], edgesMap: Map[Int, List[weightedEdge]], forest: List[weightedEdge]): List[weightedEdge] = {
       //TODO check if edgesMap is nonempty for disconnected graph
-      //FIXME prune inner-edges (edges inside a set)
-//      val minHeap = scala.collection.mutable.PriorityQueue.empty(MinOrder)
       if (vSet.components > 1) {
         val sets = vSet.parents.groupBy(_._2).mapValues(_.keys) // a Map from Sets to corresponding vertices
         /** foreach connected component select their minimum edge */
@@ -49,8 +42,9 @@ object Boruvka {
           val vertices = set._2
           // 1. Find cheapest outgoing edge (for each set)
           // 2. select the cheapest among them
-          vertices.map( v =>
-            edgesMap(v).minBy(_.weight)
+          vertices.flatMap( v =>
+            edgesMap(v)
+              .filter(e => vSet.find(e.edge.u) != vSet.find(e.edge.v))
           ).minBy(_.weight) // Reducing by minBy
         }.toSet // removed duplicate edges by toSet conversion
 
@@ -85,5 +79,5 @@ object Boruvka {
     }
 
     BoruvkaLoop(s, vToE, List[weightedEdge]())
-    }
+  }
 }
