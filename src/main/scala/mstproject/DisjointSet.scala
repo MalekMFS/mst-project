@@ -1,10 +1,13 @@
-// credit by Swaroop
+// credits by Swaroop
 package mstproject
+
+import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.HashMap
 
-class DisjoIntSet[Element] {
-  
+class DisjointSet[Element] {
+
+  //TODO replace `concurrentHashMap`
   private val parent = new HashMap[Element, Element]().withDefaultValue((-1).asInstanceOf[Element])
   private val rank = new HashMap[Element, Int]
   
