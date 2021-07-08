@@ -9,80 +9,80 @@ import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
 
 import scala.annotation.tailrec
 
-object SparkConstructor {
-  def apply() = SparkSession.builder
-        .appName("Boruvka")
-        .master("local[1]") // Change this to cluster mode in production
-        .config("spark.redis.host", "localhost")
-        .config("spark.redis.port", "6379")
-        .getOrCreate()
-}
+//object SparkConstructor {
+//  def apply() = SparkSession.builder
+//        .appName("Boruvka")
+//        .master("local[1]") // Change this to cluster mode in production
+//        .config("spark.redis.host", "localhost")
+//        .config("spark.redis.port", "6379")
+//        .getOrCreate()
+//}
 
-object redisDisjointSet{
-//    val redisConfig = RedisConfig.fromSparkConf(spark.spark)
-@transient lazy val log = org.apache.log4j.LogManager.getLogger("myLogger")
-  def apply(set: RDD[Int]): Unit = {
-    val spark = SparkConstructor()
-    val sc = spark.sparkContext
-    // initialize Parents and Ranks key-values
-    val parents = set.map(i => ("p"+i, i.toString))
-    val ranks = set.map(i => ("r"+i, 1.toString))
-    sc.toRedisKV(parents)
-    sc.toRedisKV(ranks)
-    log.warn("***Initialized Redis's Disjointset***")
-
-  }
-  val pool = new JedisPool(new JedisPoolConfig(), "localhost")
-  // Unions sets and returns status code
-  def union(u: Long, v: Long): Int = {
-    // status == 0: already in the same set
-    // status == 1: update u's parent to v
-    // status == 2 or 3: update v's parent to u
-    val r = pool.getResource
-    log.warn("***Inside Union func***")
-    var statusCode = 0
-    for {
-      (x, y) <- parents(u, v)
-      (xr, yr) <- ranks(u, v)
-    } yield {
-      if (x != y) (xr, yr) match {
-        case _ if xr < yr => r.mset("p" + x, y.toString);  statusCode = 1
-        case _ if xr > yr => r.mset("p" + y, x.toString); statusCode = 2
-        case _ => r.mset("p" + y, x.toString); r.mset("r" + x, (xr + 1).toString); statusCode = 3
-      }
-    }
-    r.close()
-    return statusCode
-  }
-  def find(u: Long): Option[Long] = { // returns leader of the set containing u
-    val r = pool.getResource
-    val res = Option(r.get(s"p$u")).flatMap(p => if (p.toLong == u) {
-      log.warn(s"*** Inside find func. u = $u , p = $p ***")
-      Some(u)
-    } else find(p.toLong))
-    r.close()
-    res
-  }
-//  def componentsCount: Long = {
+//object redisDisjointSet{
+////    val redisConfig = RedisConfig.fromSparkConf(spark.spark)
+//@transient lazy val log = org.apache.log4j.LogManager.getLogger("myLogger")
+//  def apply(set: RDD[Int]): Unit = {
+//    val spark = SparkConstructor()
+//    val sc = spark.sparkContext
+//    // initialize Parents and Ranks key-values
+//    val parents = set.map(i => ("p"+i, i.toString))
+//    val ranks = set.map(i => ("r"+i, 1.toString))
+//    sc.toRedisKV(parents)
+//    sc.toRedisKV(ranks)
+//    log.warn("***Initialized Redis's Disjointset***")
+//
+//  }
+//  val pool = new JedisPool(new JedisPoolConfig(), "localhost")
+//  // Unions sets and returns status code
+//  def union(u: Long, v: Long): Int = {
+//    // status == 0: already in the same set
+//    // status == 1: update u's parent to v
+//    // status == 2 or 3: update v's parent to u
 //    val r = pool.getResource
-//    val res = r.get("components").toLong
+//    log.warn("***Inside Union func***")
+//    var statusCode = 0
+//    for {
+//      (x, y) <- parents(u, v)
+//      (xr, yr) <- ranks(u, v)
+//    } yield {
+//      if (x != y) (xr, yr) match {
+//        case _ if xr < yr => r.mset("p" + x, y.toString);  statusCode = 1
+//        case _ if xr > yr => r.mset("p" + y, x.toString); statusCode = 2
+//        case _ => r.mset("p" + y, x.toString); r.mset("r" + x, (xr + 1).toString); statusCode = 3
+//      }
+//    }
+//    r.close()
+//    return statusCode
+//  }
+//  def find(u: Long): Option[Long] = { // returns leader of the set containing u
+//    val r = pool.getResource
+//    val res = Option(r.get(s"p$u")).flatMap(p => if (p.toLong == u) {
+//      log.warn(s"*** Inside find func. u = $u , p = $p ***")
+//      Some(u)
+//    } else find(p.toLong))
 //    r.close()
 //    res
 //  }
-  private def parents(u: Long, v: Long): Option[(Long, Long)] = for {x <- find(u); y <- find(v)} yield (x,y) // return parents for u and v
-  private def ranks(u: Long, v: Long): Option[(Long, Long)] = {
-    val r = pool.getResource
-    val res = for {x <- Option(r.get("r" + u)); y <- Option(r.get("r" + v))} yield (x.toLong, y.toLong)
-    r.close()
-    res
-  }
-}
+////  def componentsCount: Long = {
+////    val r = pool.getResource
+////    val res = r.get("components").toLong
+////    r.close()
+////    res
+////  }
+//  private def parents(u: Long, v: Long): Option[(Long, Long)] = for {x <- find(u); y <- find(v)} yield (x,y) // return parents for u and v
+//  private def ranks(u: Long, v: Long): Option[(Long, Long)] = {
+//    val r = pool.getResource
+//    val res = for {x <- Option(r.get("r" + u)); y <- Option(r.get("r" + v))} yield (x.toLong, y.toLong)
+//    r.close()
+//    res
+//  }
+//}
 
 object BoruvkaRDD_RS {
   @transient lazy val log = org.apache.log4j.LogManager.getLogger("myLogger")
   /** Returns updated parents */
   def addEdges(parents: RDD[(Int, Int)], selectedEdges: RDD[weightedEdge]): RDD[(Int, Int)] = {
-    val affectingEdges: RDD[(weightedEdge, Int)] = selectedEdges.map( e => (e, redisDisjointSet.union(e.edge.u, e.edge.v))).filter(_._2 != 0) // ignore inner edge
+    val affectingEdges: RDD[(weightedEdge, Int)] = selectedEdges.map( e => (e, RedisDisjointSet.union(e.edge.u, e.edge.v))).filter(_._2 != 0) // ignore inner edge if any
 //    println(affectingEdges.first().toString())
     val ones = affectingEdges.filter(_._2 == 1).map(_._1)
     val twoThrees = affectingEdges.filter(_._2 != 1).map(_._1)
@@ -120,7 +120,7 @@ object BoruvkaRDD_RS {
       log.warn("*** Boruvka Loop ***")
       // set of connected Vertices (same as DisjointSet)
       val sets: RDD[(Option[Long], Iterable[Int])] = parents
-        .mapPartitions ( _.map( x => (x._1, redisDisjointSet.find(x._2.toLong)) ))
+        .mapPartitions ( _.map( x => (x._1, RedisDisjointSet.find(x._2.toLong)) ))
         .groupBy(_._2) // group by parents
         .mapValues( _.map(_._1) )
 
@@ -130,6 +130,7 @@ object BoruvkaRDD_RS {
       log.warn(s"# components: $components")
       if (components > 1) { // for connected graphs //redisDisjointSet.componentsCount > 1
         /** foreach connected component select their minimum edge */
+        // TODO: think about having a vToE collection and start choosing min by that instead, better? but we will have two of each edge (duplication)
         val selectedEdges: RDD[weightedEdge] = sets.mapPartitions { part =>
           part.map {set =>
             val verticesInSet: Iterable[Int] = set._2
@@ -139,7 +140,7 @@ object BoruvkaRDD_RS {
               edges
                 .filter(e => !e.removed) // ignore selected edges
                 .filter(e => e.edge.u == v || e.edge.v == v) // edges connected to v
-                .filter(e =>  redisDisjointSet.find(e.edge.u) != redisDisjointSet.find(e.edge.v) ) // ignore internal edges
+                .filter(e =>  RedisDisjointSet.find(e.edge.u) != RedisDisjointSet.find(e.edge.v) ) // ignore internal edges
                 .min()(ord) // min edge for each vertex in a set
             ).minBy(_.weight) // min edge in each set
           }
@@ -158,7 +159,7 @@ object BoruvkaRDD_RS {
   //        )
   //      )
         val updatedEdges: RDD[weightedEdge] = edges.mapPartitions(part =>
-          part.map(e => if (selectedEdges.filter(_ == e).isEmpty()) e else weightedEdge(e.edge, e.weight, removed = true))
+          part.map(e => if (selectedEdges.filter(_ == e).isEmpty()) e else weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.selectedByV, e.id))
         )
         /** union sets in this iteration */
         val newParents: RDD[(Int, Int)] = addEdges(parents, selectedEdges)
@@ -177,7 +178,7 @@ object BoruvkaRDD_RS {
       .load(path).toDF("u", "v")
       .rdd
       .zipWithIndex
-      .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._2.toInt) )
+      .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._2.toInt, id = r._2.toInt) )
       .cache
     // val sc = spark.sparkContext
 
@@ -191,7 +192,7 @@ object BoruvkaRDD_RS {
     r.flushAll()
     r.mset("components", allVertices.count.toString) // NOTE: dummy usage of redis just to run a action to pass to the BoruvkaLoop
     r.close()
-    redisDisjointSet(allVertices)
+    RedisDisjointSet(allVertices)
    
     BoruvkaLoop(allVertices.map(v => v -> v), E, spark.sparkContext.emptyRDD[weightedEdge])
   }

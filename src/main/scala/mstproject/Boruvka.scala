@@ -3,7 +3,6 @@ package mstproject
 import Model._
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
 
 /** Returns MST for Connected graphs */
 object Boruvka {
@@ -16,19 +15,9 @@ object Boruvka {
     val t1 = E.map(e => (e.edge.u, e))
     val t2 = E.map(e => (e.edge.v, e))
     val vToE = (t1 ++ t2).groupBy(_._1).mapValues(list => list.map(_._2)) // a map from Vertex to Edges connected to that vertex
-    val vertices = ListBuffer[Int]()
 
     /** Initialize the DisjointSet. add a set for each vertex */
-    for (e <- E){
-      val u = e.edge.u
-      val v = e.edge.v
-
-      if(!vertices.contains(u))
-        vertices += u
-      if(!vertices.contains(v))
-        vertices += v
-    }
-    val s = tikiDisjointSet[Int](vertices.toSet)
+    val s = tikiDisjointSet[Int](vToE.keys.toSet)
 
     /** While 'set' has more than one component */
     @tailrec
@@ -47,11 +36,12 @@ object Boruvka {
           vertices.flatMap( v =>
             edgesMap(v)
               .filter(e => vSet.find(e.edge.u) != vSet.find(e.edge.v))
+            //FIXME: still it could be empty and minBy complains
           ).minBy(_.weight) // Reducing by minBy
         }.toSet // removed duplicate edges by toSet conversion
 
         /** Remove selected edges from the edgesMap for the next iterations */
-        //TODO check if it's better to use `fold` instead of `foldLeft`
+        //FIXME `fold` instead of `foldLeft`. foldLeft is slow for big collections
         val newEdgesMap = selectedEdges.foldLeft(edgesMap) { (m, e) =>
           val tempMap = m.-(e.edge.u, e.edge.v)
           val eu = m(e.edge.u)  diff List(e)
