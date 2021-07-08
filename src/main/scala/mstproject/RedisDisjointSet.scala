@@ -16,20 +16,19 @@ object RedisDisjointSet{
     val ranks = set.map(i => ("r"+i, 1.toString))
     sc.toRedisKV(parents)
     sc.toRedisKV(ranks)
-    log.warn("***Initialized Redis's Disjointset***")
+    log.warn("***Initialized Redis Disjointset***")
 
   }
   val jedisConfig = new JedisPoolConfig()
-  jedisConfig.setMaxIdle(100) //TODO: a better configuration?
-  jedisConfig.setMaxTotal(200)
-  val pool = new JedisPool(jedisConfig, "localhost")
+  jedisConfig.setMaxIdle(300) //TODO: a better configuration?
+  jedisConfig.setMaxTotal(300)
+  lazy val pool = new JedisPool(jedisConfig, "localhost")
   // Unions sets and returns status code
   def union(u: Long, v: Long): Int = {
     // status == 0: already in the same set
     // status == 1: update u's parent to v
     // status == 2 or 3: update v's parent to u
     val r = pool.getResource
-//    log.warn("***Inside Union func***")
     var statusCode = 0
     for {
       (x, y) <- parents(u, v)
@@ -42,6 +41,7 @@ object RedisDisjointSet{
       }
     }
     r.close()
+    if (statusCode == 0) log.warn(s"$u and $v are already in the same set. selected a wrong edge for MST")
     statusCode
   }
   def find(u: Long): Option[Long] = { // returns leader of the set containing u
@@ -77,5 +77,11 @@ object RedisDisjointSet{
     val res = for {x <- Option(r.get("r" + u)); y <- Option(r.get("r" + v))} yield (x.toLong, y.toLong)
     r.close()
     res
+  }
+  def debugInc: Long = { // for debugging purposes (counter)
+    val r = pool.getResource
+    val it = r.incr("debug")
+    r.close()
+    it
   }
 }
