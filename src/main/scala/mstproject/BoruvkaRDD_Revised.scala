@@ -113,7 +113,7 @@ object BoruvkaRDD_Revised {
 
     lazy val spark: SparkSession = SparkConstructor()
     lazy val sc = spark.sparkContext
-    val E: RDD[weightedEdge] = sc.parallelize(edges, 2200) // number of partitions
+    val E: RDD[weightedEdge] = sc.parallelize(edges, 100) // number of partitions
 
 //    val E: RDD[weightedEdge] = if (weighted)
 //      spark.read
