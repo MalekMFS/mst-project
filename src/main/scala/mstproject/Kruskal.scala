@@ -10,7 +10,7 @@ object Kruskal {
     val ESorted = E.sortBy(_.weight)
 
     var tree = ListBuffer[weightedEdge]()
-    val x = new DisjoIntSet[Int]
+    val x = new DisjointSet[Int]
 
 
     for(e <- ESorted)
