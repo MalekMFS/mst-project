@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % "2.4.8",
   "org.apache.spark" %% "spark-graphx" % "2.4.8",
   "redis.clients" % "jedis" % "3.5.1", // https://mvnrepository.com/artifact/redis.clients/jedis
-  "com.redislabs" %% "spark-redis" % "2.4.2"
+  "com.redislabs" %% "spark-redis" % "2.6.0" // RDD dump to Redis
 )
 
 assemblyMergeStrategy in assembly := {
