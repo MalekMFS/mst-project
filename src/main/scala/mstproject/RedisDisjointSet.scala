@@ -22,7 +22,7 @@ object RedisDisjointSet{
   val jedisConfig = new JedisPoolConfig()
   jedisConfig.setMaxIdle(8000) //TODO: a better configuration?
   jedisConfig.setMaxTotal(8000)
-  lazy val pool = new JedisPool(jedisConfig, "localhost")
+  lazy val pool = new JedisPool(jedisConfig, "localhost", 6379,10000)
   // Unions sets and returns status code
   def union(u: Long, v: Long): Int = {
     // status == 0: already in the same set
@@ -46,11 +46,12 @@ object RedisDisjointSet{
   }
   def find(u: Long): Option[Long] = { // returns leader of the set containing u
     val r = pool.getResource
-    val res = Option(r.get(s"p$u")).flatMap(p => if (p.toLong == u) {
+    val rget = r.get(s"p$u")
+    r.close()
+    val res = Option(rget).flatMap(p => if (p.toLong == u) {
 //      log.warn(s"*** Inside find func. u = $u , p = $p ***")
       Some(u)
     } else find(p.toLong))
-    r.close()
     res
   }
   def componentsCount: Long = {
