@@ -20,27 +20,25 @@ object RedisDisjointSet{
 
   }
   val jedisConfig = new JedisPoolConfig()
-  jedisConfig.setMaxIdle(8000) //TODO: a better configuration?
-  jedisConfig.setMaxTotal(8000)
+  jedisConfig.setMaxIdle(200) //TODO: a better configuration?
+  jedisConfig.setMaxTotal(200)
   lazy val pool = new JedisPool(jedisConfig, "localhost", 6379,10000)
   // Unions sets and returns status code
   def union(u: Long, v: Long): Int = {
     // status == 0: already in the same set
     // status == 1: update u's parent to v
     // status == 2 or 3: update v's parent to u
-    val r = pool.getResource
     var statusCode = 0
     for {
       (x, y) <- parents(u, v)
       (xr, yr) <- ranks(u, v)
     } yield {
       if (x != y) (xr, yr) match {
-        case _ if xr < yr => r.mset("p" + x, y.toString); r.decr("components"); statusCode = 1
-        case _ if xr > yr => r.mset("p" + y, x.toString); r.decr("components"); statusCode = 2
-        case _ => r.mset("p" + y, x.toString); r.mset("r" + x, (xr + 1).toString); r.decr("components"); statusCode = 3
+        case _ if xr < yr => val r = pool.getResource; r.mset("p" + x, y.toString); r.decr("components"); r.close(); statusCode = 1
+        case _ if xr > yr => val r = pool.getResource; r.mset("p" + y, x.toString); r.decr("components"); r.close(); statusCode = 2
+        case _ => val r = pool.getResource; r.mset("p" + y, x.toString); r.mset("r" + x, (xr + 1).toString); r.decr("components"); r.close(); statusCode = 3
       }
     }
-    r.close()
     if (statusCode == 0) log.warn(s"$u and $v are already in the same set. selected a wrong edge for MST")
     statusCode
   }
