@@ -26,7 +26,6 @@ object BoruvkaRDD_Revised {
 
     if (components > 1) {
       /** foreach connected component select their minimum edge */
-      //FIXME: what about
       val VToECandidates = setToE.mapPartitions{ part =>
         part.map{ vEs =>
           val iteration: Int = RedisDisjointSet.iterationCount
@@ -95,8 +94,8 @@ object BoruvkaRDD_Revised {
       log.warn(s"# Total removed edges: $removedCount")
 
       /** union sets in this iteration */
-      updateRedisDisjointSet(selectedEdges) //NOTE: an action will be called on it
-      log.warn("DisjointSet updated")
+        updateRedisDisjointSet(selectedEdges) //NOTE: an action will be called on it
+        log.warn("DisjointSet updated")
 
       BoruvkaLoop(updatedSetToE, forest ++ selectedEdges) // next iteration after updates
     }
@@ -140,11 +139,8 @@ object BoruvkaRDD_Revised {
     log.warn(s"# Graph vertices: $vCount")
 
     /** Initialize Redis Disjoint Set */
-    val r = new Jedis()
-    r.flushAll()
-    r.mset("components", vCount.toString)
-    r.mset("iteration", "0")
-    r.close()
+    RedisDisjointSet.flush
+    RedisDisjointSet.componentsSet(vCount)
     RedisDisjointSet(allVertices)
 
 

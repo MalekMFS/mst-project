@@ -20,8 +20,8 @@ object RedisDisjointSet{
 
   }
   val jedisConfig = new JedisPoolConfig()
-  jedisConfig.setMaxIdle(200) //TODO: a better configuration?
-  jedisConfig.setMaxTotal(200)
+//  jedisConfig.setMaxIdle(200) //TODO: a better configuration?
+//  jedisConfig.setMaxTotal(200)
   lazy val pool = new JedisPool(jedisConfig, "localhost", 6379,10000)
   // Unions sets and returns status code
   def union(u: Long, v: Long): Int = {
@@ -52,6 +52,11 @@ object RedisDisjointSet{
     } else find(p.toLong))
     res
   }
+  def componentsSet(u: Long): Unit = {
+    val r = pool.getResource
+    r.mset("components", u.toString)
+    r.close()
+  }
   def componentsCount: Long = {
     val r = pool.getResource
     val res = r.get("components").toLong
@@ -76,6 +81,11 @@ object RedisDisjointSet{
     val res = for {x <- Option(r.get("r" + u)); y <- Option(r.get("r" + v))} yield (x.toLong, y.toLong)
     r.close()
     res
+  }
+  def flush: Unit = {
+    val r = pool.getResource
+    val it = r.flushAll()
+    r.close()
   }
   def debugInc: Long = { // for debugging purposes (counter)
     val r = pool.getResource
