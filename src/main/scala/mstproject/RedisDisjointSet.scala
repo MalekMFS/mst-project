@@ -20,8 +20,8 @@ object RedisDisjointSet{
 
   }
   val jedisConfig = new JedisPoolConfig()
-//  jedisConfig.setMaxIdle(200) //TODO: a better configuration?
-//  jedisConfig.setMaxTotal(200)
+  jedisConfig.setMaxIdle(200) //TODO: a better configuration?
+  jedisConfig.setMaxTotal(200)
   lazy val pool = new JedisPool(jedisConfig, "localhost", 6379,10000)
   // Unions sets and returns status code
   def union(u: Long, v: Long): Int = {
