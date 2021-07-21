@@ -102,27 +102,27 @@ object BoruvkaRDD_Revised {
     }
   }
 
-  def apply(edges: List[weightedEdge], debug: Boolean = false): List[weightedEdge] = {
+  def apply(path: String, delim: String, weighted: Boolean = false, debug: Boolean = false): List[weightedEdge] = {
     //TODO anywhere needed to cache data?
 
     lazy val spark: SparkSession = SparkConstructor()
     lazy val sc = spark.sparkContext
-    val E: RDD[weightedEdge] = sc.parallelize(edges, 100) // number of partitions
+//    val E: RDD[weightedEdge] = sc.parallelize(edges, 100) // number of partitions
 
-//    val E: RDD[weightedEdge] = if (weighted)
-//      spark.read
-//        .format("csv").option("delimiter",delim)
-//        .load(path).toDF("u", "v", "w")
-//        .rdd
-//        .zipWithIndex
-//        .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._1.getAs[String](2).toInt, id = r._2.toInt) )
-//      else
-//      spark.read
-//        .format("csv").option("delimiter",delim)
-//        .load(path).toDF("u", "v")
-//        .rdd
-//        .zipWithIndex // add weights
-//        .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._2.toInt, id = r._2.toInt) )
+    val E: RDD[weightedEdge] = if (weighted)
+      spark.read
+        .format("csv").option("delimiter",delim)
+        .load(path).toDF("u", "v", "w")
+        .rdd
+        .zipWithIndex
+        .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._1.getAs[String](2).toInt, id = r._2.toInt) )
+      else
+      spark.read
+        .format("csv").option("delimiter",delim)
+        .load(path).toDF("u", "v")
+        .rdd
+        .zipWithIndex // add weights
+        .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._2.toInt, id = r._2.toInt) )
 //    .cache
     log.warn(s"# Graph edges: ${E.count}")
 

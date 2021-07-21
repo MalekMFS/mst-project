@@ -46,11 +46,10 @@ object RedisDisjointSet{
     val r = pool.getResource
     val rget = r.get(s"p$u")
     r.close()
-    val res = Option(rget).flatMap(p => if (p.toLong == u) {
+    Option(rget).flatMap(p => if (p.toLong == u) {
 //      log.warn(s"*** Inside find func. u = $u , p = $p ***")
       Some(u)
     } else find(p.toLong))
-    res
   }
   def componentsSet(u: Long): Unit = {
     val r = pool.getResource

@@ -11,13 +11,16 @@ object Main extends App {
     lazy val morenoEdges = file"src/main/resources/out.moreno_train_train".lines.map( l => l.split(" ").map(_.toInt) ).toList
     lazy val fbEdges = file"src/main/resources/facebook_combined.txt".lines.map( l => l.split(" ").map(_.toInt) ).toList
     lazy val caEdges = file"src/main/resources/roadNet-CA.txt".lines.map( l => l.split("\t").map(_.toInt) ).toList
+    lazy val orkutEdges = file"src/main/resources/com-orkut.ungraph.txt".lines.map( l => l.split("\t").map(_.toInt) ).toList
 
 //    val edges = sampleEdges.zipWithIndex.map(r => weightedEdge( myEdge(r._1._1, r._1._2), r._2, id = r._2))
 //    val edges = morenoEdges.zipWithIndex.map(r => weightedEdge( myEdge(r._1(0), r._1(1)), r._1(2), id = r._2))
 //    val edges = fbEdges.zipWithIndex.map(r => weightedEdge( myEdge(r._1(0), r._1(1)), r._2, id = r._2))
-    val edges = caEdges.zipWithIndex.map(r => weightedEdge( myEdge(r._1(0), r._1(1)), r._2, id = r._2 ))
+//    val edges = caEdges.zipWithIndex.map(r => weightedEdge( myEdge(r._1(0), r._1(1)), r._2, id = r._2 ))
+//    val edges = orkutEdges.zipWithIndex.map(r => weightedEdge( myEdge(r._1(0), r._1(1)), r._2, id = r._2 ))
 
-    println(s"Number of edges= ${edges.length}")
+//    println(s"Number of edges= ${edges.length}")
+
 //    val kruskal = Kruskal(edges)
 //    println("Kruskal: " + kruskal.length)//; kruskal.foreach(println)
 //    println("---")
@@ -26,8 +29,8 @@ object Main extends App {
 //    println("---")
 //    val boruvka = Boruvka(edges)
 //    println("Boruvka: " + boruvka.length)//; boruvka.foreach(println)
-    val boruvkaRDD_Revised = BoruvkaRDD_Revised(edges)
-    println("BoruvkaRDD_Revised: " + boruvkaRDD_Revised.length)//; boruvkaDS.foreach(println)
+    val boruvkaRDD_Revised = BoruvkaRDD_Revised("src/main/resources/com-orkut.ungraph.txt", "\t")
+    println("BoruvkaRDD_Revised: " + boruvkaRDD_Revised.length)//; boruvkaRDD_Revised.foreach(println)
 
 //    val boruvkaRDD_RS = BoruvkaRDD_RS("src/main/resources/facebook_combined.txt", " ")
 //    println("BoruvkaRS: " + boruvkaRDD_RS.length)//; boruvkaDS.foreach(println)
