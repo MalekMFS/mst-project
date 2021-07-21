@@ -1,6 +1,6 @@
 name := "mst-project"
 
-version := "0.1"
+version := "0.2"
 
 scalaVersion := "2.11.12"
 
@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "2.4.8",
   "org.apache.spark" %% "spark-sql" % "2.4.8",
   "org.apache.spark" %% "spark-graphx" % "2.4.8",
-  "redis.clients" % "jedis" % "3.5.1", // https://mvnrepository.com/artifact/redis.clients/jedis
+  "redis.clients" % "jedis" % "3.6.2", // https://mvnrepository.com/artifact/redis.clients/jedis
   "com.redislabs" %% "spark-redis" % "2.6.0" // RDD dump to Redis
 )
 

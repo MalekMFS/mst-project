@@ -16,13 +16,12 @@ object BoruvkaRDD_Revised {
     selectedEdges.foreachPartition( part => part.foreach( e => RedisDisjointSet.union(e.edge.u, e.edge.v) ))
 
   @tailrec
-  def BoruvkaLoop(setToE:  RDD[(Int, Iterable[weightedEdge])], forest: RDD[weightedEdge]): List[weightedEdge] = {
-    val itCount = RedisDisjointSet.iterationInc
-    log.warn(s"*** iteration $itCount ****")
+  def BoruvkaLoop(setToE:  RDD[(Int, Iterable[weightedEdge])], forest: RDD[weightedEdge], debug: Boolean): List[weightedEdge] = {
+    val round = RedisDisjointSet.iterationInc
+    log.warn(s"*** iteration $round ****")
     val components = RedisDisjointSet.componentsCount
     log.warn(s"# components: $components")
-    val mstCount = forest.count
-    log.warn(s"# input MST edges: $mstCount")
+    if(debug) { val mstCount = forest.count; log.warn(s"# input MST edges: $mstCount") }
 
     if (components > 1) {
       /** foreach connected component select their minimum edge */
@@ -35,7 +34,7 @@ object BoruvkaRDD_Revised {
             val minEdge = selectableEdges.minBy(_.weight)
             val updatedEdges  = vEs._2.groupBy(_.id).values.map(it => it.last) // remove duplicate edges
               .map { e =>
-                if (!e.removed && e == minEdge) //RedisDisjointSet.find(e.edge.u) != RedisDisjointSet.find(e.edge.v)
+                if (!e.removed && e == minEdge) // and not in same set already checked
                   if (iteration > 1)
                     weightedEdge(e.edge, e.weight, removed = false, selectedInStep = iteration, selectedByV = vertex, e.id)
                   else // First iteration: sets = vertices. deterministic choices.
@@ -49,19 +48,18 @@ object BoruvkaRDD_Revised {
           }
           else (vertex, vEs._2.map(e => weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.selectedByV, e.id))) // mark all edges of a vertex as removed because they were in same set or already removed
         }
-      }.cache
+      } //.cache
       // TODO partition sets by vertices.
-      val numCandidates = VToECandidates.flatMap(_._2).filter(_.selectedInStep == itCount).count
-      log.warn(s"# Candidate edges to be removed (selected): $numCandidates")
+      if(debug) { val numCandidates = VToECandidates.flatMap(_._2).filter(_.selectedInStep == round).count; log.warn(s"# Candidate edges to be removed (selected): $numCandidates") }
 
       val updatedSetToE: RDD[(Int, Iterable[weightedEdge])] = {
-        if (itCount > 1)
+        if (round > 1)
           VToECandidates.groupBy(x => RedisDisjointSet.find(x._1)).map { sets =>
             val set = sets._1
             val edgesOfVertex = sets._2
             val selectableEdges = edgesOfVertex.flatten(_._2)
               .groupBy(_.id).values.map(it => it.last) // remove duplicate edges
-              .filter(_.selectedInStep == itCount)
+              .filter(_.selectedInStep == round)
             if (selectableEdges.nonEmpty){
               val setMinEdge = selectableEdges.minBy(_.weight)
               val res = edgesOfVertex.flatMap{ thisSet =>
@@ -80,24 +78,21 @@ object BoruvkaRDD_Revised {
           }
         else VToECandidates
       }.cache
-      val numKeys = updatedSetToE.count
-      log.warn(s"# Keys (should be same as components): $numKeys")
+      if(debug){ val numKeys = updatedSetToE.count; log.warn(s"# Keys (should be same as components): $numKeys") }
 
-
-      val selectedEdges = updatedSetToE.flatMap(_._2).filter(e => e.removed && e.selectedInStep == itCount)
+      val selectedEdges = updatedSetToE.flatMap(_._2).filter(e => e.removed && e.selectedInStep == round)
         .groupBy(_.id).values.map(it => it.last) // remove duplicate edges
         .cache
-      val selectedEdgesCount = selectedEdges.count()
-      log.warn(s"# selected edges: $selectedEdgesCount")
-
-      val removedCount = updatedSetToE.flatMap(_._2).filter(_.removed).count
-      log.warn(s"# Total removed edges: $removedCount")
+      if(debug) {
+        val selectedEdgesCount = selectedEdges.count(); log.warn(s"# selected edges: $selectedEdgesCount")
+        val removedCount = updatedSetToE.flatMap(_._2).filter(_.removed).count; log.warn(s"# Total removed edges: $removedCount")
+      }
 
       /** union sets in this iteration */
         updateRedisDisjointSet(selectedEdges) //NOTE: an action will be called on it
         log.warn("DisjointSet updated")
 
-      BoruvkaLoop(updatedSetToE, forest ++ selectedEdges) // next iteration after updates
+      BoruvkaLoop(updatedSetToE, forest ++ selectedEdges, debug) // next iteration after updates
     }
     else { // return the resulting forest
       val mstWeight = forest.aggregate(0)((acc, e) => acc + e.weight, (acc, e) => acc + e)
@@ -107,7 +102,7 @@ object BoruvkaRDD_Revised {
     }
   }
 
-  def apply(edges: List[weightedEdge]): List[weightedEdge] = {
+  def apply(edges: List[weightedEdge], debug: Boolean = false): List[weightedEdge] = {
     //TODO anywhere needed to cache data?
 
     lazy val spark: SparkSession = SparkConstructor()
@@ -135,8 +130,7 @@ object BoruvkaRDD_Revised {
     val t1 = E.map(e => e.edge.u)
     val t2 = E.map(e => e.edge.v)
     val allVertices: RDD[Int] = t1.union(t2).distinct // removes duplicate vertices
-    val vCount = allVertices.count
-    log.warn(s"# Graph vertices: $vCount")
+    val vCount = allVertices.count; log.warn(s"# Graph vertices: $vCount")
 
     /** Initialize Redis Disjoint Set */
     RedisDisjointSet.flush
@@ -151,7 +145,7 @@ object BoruvkaRDD_Revised {
       .groupBy(kv => kv.v)
       .mapValues(list => list.map(_.edge))
 
-    val result = BoruvkaLoop(vToE, spark.sparkContext.emptyRDD[weightedEdge])
+    val result = BoruvkaLoop(vToE, spark.sparkContext.emptyRDD[weightedEdge], debug)
     log.warn("Collected Result Successfully!")
     result
   }
