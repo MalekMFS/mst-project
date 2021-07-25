@@ -5,6 +5,8 @@ import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import redis.clients.jedis.{JedisPool, JedisPoolConfig}
 
+import scala.annotation.tailrec
+
 object RedisDisjointSet{
   //    val redisConfig = RedisConfig.fromSparkConf(spark.spark)
   @transient lazy val log: Logger = org.apache.log4j.LogManager.getLogger("myLogger")
@@ -20,8 +22,9 @@ object RedisDisjointSet{
 
   }
   val jedisConfig = new JedisPoolConfig()
-  jedisConfig.setMaxIdle(200) //TODO: a better configuration?
-  jedisConfig.setMaxTotal(200)
+  jedisConfig.setMaxIdle(2000) //TODO: a better configuration?
+  jedisConfig.setMaxTotal(2000)
+  jedisConfig.setMaxWaitMillis(500)
   lazy val pool = new JedisPool(jedisConfig, "localhost", 6379,10000)
   // Unions sets and returns status code
   def union(u: Long, v: Long): Int = {
@@ -42,14 +45,15 @@ object RedisDisjointSet{
     if (statusCode == 0) log.warn(s"$u and $v are already in the same set. selected a wrong edge for MST")
     statusCode
   }
+  @tailrec
   def find(u: Long): Option[Long] = { // returns leader of the set containing u
     val r = pool.getResource
-    val rget = r.get(s"p$u")
+    val rget = r.get(s"p$u").toLong
     r.close()
-    Option(rget).flatMap(p => if (p.toLong == u) {
-//      log.warn(s"*** Inside find func. u = $u , p = $p ***")
+    if (rget == u)
       Some(u)
-    } else find(p.toLong))
+    else
+      find(rget)
   }
   def componentsSet(u: Long): Unit = {
     val r = pool.getResource
