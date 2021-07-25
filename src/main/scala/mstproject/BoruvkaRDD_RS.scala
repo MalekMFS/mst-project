@@ -159,7 +159,7 @@ object BoruvkaRDD_RS {
   //        )
   //      )
         val updatedEdges: RDD[weightedEdge] = edges.mapPartitions(part =>
-          part.map(e => if (selectedEdges.filter(_ == e).isEmpty()) e else weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.selectedByV, e.id))
+          part.map(e => if (selectedEdges.filter(_ == e).isEmpty()) e else weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.id))
         )
         /** union sets in this iteration */
         val newParents: RDD[(Int, Int)] = addEdges(parents, selectedEdges)

@@ -36,17 +36,17 @@ object BoruvkaRDD_Revised {
               .map { e =>
                 if (!e.removed && e == minEdge) // and not in same set already checked
                   if (iteration > 1)
-                    weightedEdge(e.edge, e.weight, removed = false, selectedInStep = iteration, selectedByV = vertex, e.id)
+                    weightedEdge(e.edge, e.weight, removed = false, selectedInStep = iteration, e.id)
                   else // First iteration: sets = vertices. deterministic choices.
                   {
 //                    log.warn(s"min is: ${minEdge.id}: ${minEdge.edge.u + "-" + minEdge.edge.v} w: ${minEdge.weight}")
-                    weightedEdge(e.edge, e.weight, removed = true, selectedInStep = iteration, selectedByV = vertex, e.id)
+                    weightedEdge(e.edge, e.weight, removed = true, selectedInStep = iteration, e.id)
                   }
                 else e
               }
             (vertex, updatedEdges)
           }
-          else (vertex, vEs._2.map(e => weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.selectedByV, e.id))) // mark all edges of a vertex as removed because they were in same set or already removed
+          else (vertex, vEs._2.map(e => weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.id))) // mark all edges of a vertex as removed because they were in same set or already removed
         }
       } //.cache
       // TODO partition sets by vertices.
@@ -66,13 +66,13 @@ object BoruvkaRDD_Revised {
                 val edges = thisSet._2
                 edges.map { e =>
                   if (!e.removed && e == setMinEdge)
-                    weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.selectedByV, e.id)
+                    weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.id)
                   else e
                 }
               }.groupBy(_.id).values.map(it => it.last) // remove duplicate edges
               (set.getOrElse(-1L).toInt, res)
             } else {
-              val markedRemoved = edgesOfVertex.flatten(_._2).map(e => weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.selectedByV, e.id))
+              val markedRemoved = edgesOfVertex.flatten(_._2).map(e => weightedEdge(e.edge, e.weight, removed = true, e.selectedInStep, e.id))
               (set.getOrElse(-1L).toInt, markedRemoved)
             }
           }
