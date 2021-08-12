@@ -84,7 +84,10 @@ object algorithm3 {
 
       var xbroad = sc.broadcast(B)
       log.warn(s"Broadcasted new DisjointSet")
-      var edgelist = distEgrouped.map(a => findminimum(mapfunction(a._2), xbroad.value)).reduce((a,b) => reduceMaps(a,b)) // RDD map-reduce operation
+      var tmp = distEgrouped.map(a => findminimum(mapfunction(a._2), xbroad.value)) // RDD map operation
+      log.warn(s"Mapped for minimum edges")
+      var edgelist = tmp.reduce((a,b) => reduceMaps(a,b)) // RDD reduce operation
+      log.warn(s"Reduced to minimum edges")
       edgelistsize = edgelist.size
       log.warn(s"EdgeListSize: $edgelistsize")
       for((key,value) <- edgelist){
