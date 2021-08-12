@@ -144,13 +144,14 @@ object BoruvkaRDD_Revised {
         .zipWithIndex // add weights
         .map( r => weightedEdge( myEdge(r._1.getAs[String](0).toInt, r._1.getAs[String](1).toInt), r._2.toInt, id = r._2.toInt) )
 //    .cache
-    log.warn(s"# Graph edges: ${E.count}")
+    log.warn(s"# Graph edges: ${dataset.eCount}")
 
     /** Find all vertices */
     val t1 = E.map(e => e.edge.u)
     val t2 = E.map(e => e.edge.v)
     val allVertices: RDD[Int] = t1.union(t2).distinct // removes duplicate vertices
-    val vCount = allVertices.count; log.warn(s"# Graph vertices: $vCount")
+    val vCount = if (debug) allVertices.count else dataset.vCount
+    log.warn(s"# Graph vertices: $vCount")
 
     /** Initialize Redis Disjoint Set */
     RedisDisjointSet.flush

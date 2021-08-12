@@ -1,7 +1,7 @@
 package mstproject.CME323
 // an Implementation of CME-323.algorithm3 (Parallel Prim) of  "s-ramaswamy"
 // Main source: https://github.com/s-ramaswamy/CME-323-project/blob/master/algorithm3.scala
-import mstproject.Model.{myEdge, weightedEdge}
+import mstproject.Model.{graphDataset, myEdge, weightedEdge}
 import mstproject.SparkConstructor
 import org.apache.log4j.Logger
 
@@ -59,13 +59,13 @@ class DisjointSet[Element] extends Serializable{
 
 object algorithm3 {
   @transient lazy val log: Logger = org.apache.log4j.LogManager.getLogger("myLogger")
-  def apply(path: String, delim: String): List[weightedEdge] = {
+  def apply(dataset: graphDataset): List[weightedEdge] = {
     val spark = SparkConstructor()
     val sc = spark.sparkContext
-    val V = 0 to 1696415  toArray
-    val distK = sc.textFile(path)
+    val V = 0 to dataset.vCount  toArray
+    val distK = sc.textFile(dataset.path)
     log.warn("Read the dataset")
-    val distE = distK.map( s => ((s.split("\\s+")(0).toInt,s.split("\\s+")(1).toInt),1) )
+    val distE = distK.map( s => ((s.split(dataset.delim)(0).toInt,s.split(dataset.delim)(1).toInt), if(dataset.weighted) s.split(dataset.delim)(2).toInt else 1) )
     var A = new DisjointSet[Int]
     for(i <- V){
       A.add(i)
