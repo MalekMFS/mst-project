@@ -1,4 +1,4 @@
-This repo contains implementations for my Master's project, "Comparing and Improving The Minimum Spanning Tree Algorithms in MapReduce" (In Persian) at the Sharif University of Technology.
+This repo contains implementations for my Master's project, "Comparing and Improving The Minimum Spanning Tree Algorithms in MapReduce" (In Persian) at the CE Algorithms Lab of Sharif University of Technology.
 
 # Abstract
 In recent decades, we have faced the enormous growth of data and graph volumes. This requires modern ways of computation and storage systems and algorithms.
